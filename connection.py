@@ -1,7 +1,9 @@
-from environs import Env
-from datetime import datetime
 import requests
 import csv
+
+from environs import Env
+from datetime import datetime
+from pathlib import Path
 
 
 class CheckConnection:
@@ -46,21 +48,24 @@ class CheckConnection:
             file.close()
 
     def read_log(self):
+
         try:
-            updated_lines = []
-            with open(self.file_name, "r", encoding="utf8") as file:
-                csv_reader = csv.reader(file, delimiter="|")
-                for row in csv_reader:
-                    if row[1] == "waiting":
-                        self.send_message(row[0])
-                        updated_lines.append("{}|notified\n".format(row[0]))
-            self.clean_file()
+            file_exists = Path("./{}".format(self.file_name))
+            if file_exists.exists:
+                updated_lines = []
+                with open(self.file_name, "r", encoding="utf8") as file:
+                    csv_reader = csv.reader(file, delimiter="|")
+                    for row in csv_reader:
+                        if row[1] == "waiting":
+                            self.send_message(row[0])
+                            updated_lines.append("{}|notified\n".format(row[0]))
+                self.clean_file()
 
-            for updated_item in updated_lines:
-                self.write_log(updated_item)
-
-        except FileNotFoundError as err:
-            open(self.file_name, "a").close()
+                for updated_item in updated_lines:
+                    self.write_log(updated_item)
+            else:
+                open(self.file_name, "w").close()
+        except ValueError as err:
             print(err)
 
 
