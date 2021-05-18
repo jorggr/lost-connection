@@ -48,10 +48,9 @@ class CheckConnection:
             file.close()
 
     def read_log(self):
-
         try:
             file_exists = Path("./{}".format(self.file_name))
-            if file_exists.exists:
+            if file_exists.exists():
                 updated_lines = []
                 with open(self.file_name, "r", encoding="utf8") as file:
                     csv_reader = csv.reader(file, delimiter="|")
@@ -65,7 +64,7 @@ class CheckConnection:
                     self.write_log(updated_item)
             else:
                 open(self.file_name, "w").close()
-        except ValueError as err:
+        except FileNotFoundError as err:
             print(err)
 
 
