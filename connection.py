@@ -1,36 +1,63 @@
 from environs import Env
 from datetime import datetime
 import requests
-import urllib
-
-
-secret = Env()
-secret.read_env()
+import csv
 
 
 class CheckConnection:
-    def __init__(self) -> None:
+    def __init__(self):
+        secret = Env()
+        secret.read_env()
         self.token = secret.str("TOKEN_BOT")
         self.chat_id = secret.str("CHAT_ID")
+        self.now = datetime.now()
+        self.file_name = "historial_{}.csv".format(self.now.strftime("%d-%B-%Y"))
 
     def send_message(self, message):
-        url = "https://api.telegram.org/bot{}/sendMessage?chat_id={}&parse_mode=Markdown&text={}".format(
+        send_text = "https://api.telegram.org/bot{}/sendMessage?chat_id={}&parse_mode=Markdown&text={}".format(
             self.token,
             self.chat_id,
             message,
         )
-        print(url)
+        response = requests.post(send_text)
+        return response
 
     def test_connection(self):
-        url_ping = "http://google.com/"
-        now = datetime.now()
-        date_time = "{}".format(now.strftime("%d %B %Y - %H:%M:%S"))
-        print(date_time)
+        url_to_check = "http://google.com/"
+        date_time = "{}".format(self.now.strftime("%d %B %Y - %H:%M:%S"))
 
         try:
-            urllib.request.urlopen(url_ping, timeout=1)
-        except urllib.error.URLError as err:
-            print("Sin conexión a internet {}".format(err))
+            response = requests.get(url_to_check)
+            if response.status_code == 200:
+                self.send_message("En linea ...")
+                self.read_log()
+        except requests.exceptions.ConnectionError as err:
+            message_err = "{} - Error de comunicación al exterior|waiting\n".format(date_time)
+            self.write_log(message_err)
+            print(err)
+
+    def clean_file(self):
+        file = open(self.file_name, "r+")
+        file.truncate(0)
+
+    def write_log(self, message):
+        with open(self.file_name, "a", encoding="utf8") as file:
+            file.write(message)
+            file.close()
+
+    def read_log(self):
+        updated_lines = []
+        with open(self.file_name, "r", encoding="utf8") as file:
+            csv_reader = csv.reader(file, delimiter="|")
+            for row in csv_reader:
+                if row[1] == "waiting":
+                    self.send_message(row[0])
+                    updated_lines.append("{}|notified\n".format(row[0]))
+
+        self.clean_file()
+
+        for updated_item in updated_lines:
+            self.write_log(updated_item)
 
 
 if __name__ == "__main__":
