@@ -21,7 +21,6 @@ class CheckConnection:
             response = requests.get(url_to_check)
             if response.status_code == 200:
                 self.read_log()
-                print("En linea ...")
         except requests.exceptions.ConnectionError as err:
             message_err = "{} - Error de comunicación al exterior|waiting\n".format(date_time)
             self.write_log(message_err)
